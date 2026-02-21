@@ -21,14 +21,17 @@
   "proxies": [],
   "default_retry_policy": {
     "retry_count": 2,
-    "delays_ms": [600, 1200]
+    "delays_ms": [
+      600,
+      1200
+    ]
   },
   "models": [
     {
       "name": "Droid Core (MiniMax M2.5)",
       "id": "minimax-m2.5",
       "type": "common",
-      "reasoning": "off",
+      "reasoning": "auto",
       "provider": "fireworks",
       "capabilities": {
         "vision": false
@@ -49,7 +52,7 @@
       "name": "Droid Core (GLM-4.7)",
       "id": "glm-4.7",
       "type": "common",
-      "reasoning": "off",
+      "reasoning": "auto",
       "provider": "fireworks",
       "capabilities": {
         "vision": true
@@ -57,21 +60,28 @@
       "fallback_model": "kimi-k2.5",
       "retry_policy": {
         "retry_count": 3,
-        "delays_ms": [500, 1200, 2500]
+        "delays_ms": [
+          500,
+          1200,
+          2500
+        ]
       }
     },
     {
       "name": "Droid Core (Kimi K2.5)",
       "id": "kimi-k2.5",
       "type": "common",
-      "reasoning": "off",
+      "reasoning": "auto",
       "provider": "fireworks",
       "capabilities": {
         "vision": true
       },
       "retry_policy": {
         "retry_count": 2,
-        "delays_ms": [400, 900]
+        "delays_ms": [
+          400,
+          900
+        ]
       }
     },
     {
@@ -95,7 +105,7 @@
       "name": "GPT-5.1 Codex",
       "id": "gpt-5.1-codex",
       "type": "openai",
-      "reasoning": "off",
+      "reasoning": "auto",
       "provider": "openai"
     },
     {
