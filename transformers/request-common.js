@@ -9,6 +9,17 @@ export function transformToCommon(openaiRequest) {
     ...openaiRequest
   };
 
+  // Gemini/common endpoint rejects OpenAI-style 'developer' role.
+  // Normalize it to 'system' before further processing.
+  if (Array.isArray(commonRequest.messages)) {
+    commonRequest.messages = commonRequest.messages.map((m) => {
+      if (m && typeof m === 'object' && m.role === 'developer') {
+        return { ...m, role: 'system' };
+      }
+      return m;
+    });
+  }
+
   const systemPrompt = getSystemPrompt();
   
   if (systemPrompt) {
