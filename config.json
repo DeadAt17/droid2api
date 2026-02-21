@@ -1,5 +1,5 @@
 {
-  "port": 3000,
+  "port": 3010,
   "model_redirects": {
     "claude-3-5-haiku-20241022": "claude-haiku-4-5-20251001",
     "claude-sonnet-4-5": "claude-sonnet-4-5-20250929"
@@ -19,34 +19,70 @@
     }
   ],
   "proxies": [],
+  "default_retry_policy": {
+    "retry_count": 2,
+    "delays_ms": [600, 1200]
+  },
   "models": [
     {
-      "name": "Opus 4.5",
-      "id": "claude-opus-4-5-20251101",
-      "type": "anthropic",
-      "reasoning": "auto",
-      "provider": "anthropic"
+      "name": "Droid Core (MiniMax M2.5)",
+      "id": "minimax-m2.5",
+      "type": "common",
+      "reasoning": "off",
+      "provider": "fireworks",
+      "capabilities": {
+        "vision": false
+      },
+      "fallback_model": "gemini-3-flash-preview"
     },
     {
-      "name": "Haiku 4.5",
+      "name": "Gemini 3 Flash",
+      "id": "gemini-3-flash-preview",
+      "type": "common",
+      "reasoning": "auto",
+      "provider": "google",
+      "capabilities": {
+        "vision": true
+      }
+    },
+    {
+      "name": "Droid Core (GLM-4.7)",
+      "id": "glm-4.7",
+      "type": "common",
+      "reasoning": "off",
+      "provider": "fireworks",
+      "capabilities": {
+        "vision": true
+      },
+      "fallback_model": "kimi-k2.5",
+      "retry_policy": {
+        "retry_count": 3,
+        "delays_ms": [500, 1200, 2500]
+      }
+    },
+    {
+      "name": "Droid Core (Kimi K2.5)",
+      "id": "kimi-k2.5",
+      "type": "common",
+      "reasoning": "off",
+      "provider": "fireworks",
+      "capabilities": {
+        "vision": true
+      },
+      "retry_policy": {
+        "retry_count": 2,
+        "delays_ms": [400, 900]
+      }
+    },
+    {
+      "name": "Claude Haiku 4.5",
       "id": "claude-haiku-4-5-20251001",
       "type": "anthropic",
       "reasoning": "auto",
-      "provider": "anthropic"
-    },
-    {
-      "name": "Sonnet 4.5",
-      "id": "claude-sonnet-4-5-20250929",
-      "type": "anthropic",
-      "reasoning": "auto",
-      "provider": "anthropic"
-    },
-    {
-      "name": "GPT-5.2",
-      "id": "gpt-5.2",
-      "type": "openai",
-      "reasoning": "auto",
-      "provider": "openai"
+      "provider": "anthropic",
+      "capabilities": {
+        "vision": true
+      }
     },
     {
       "name": "GPT-5.1",
@@ -70,32 +106,63 @@
       "provider": "openai"
     },
     {
-      "name": "GLM-4.6",
-      "id": "glm-4.6",
-      "type": "common",
-      "reasoning": "off",
-      "provider": "fireworks"
+      "name": "GPT-5.2",
+      "id": "gpt-5.2",
+      "type": "openai",
+      "reasoning": "auto",
+      "provider": "openai"
     },
     {
-      "name": "GLM-4.7",
-      "id": "glm-4.7",
-      "type": "common",
-      "reasoning": "off",
-      "provider": "fireworks"
+      "name": "GPT-5.2 Codex",
+      "id": "gpt-5.2-codex",
+      "type": "openai",
+      "reasoning": "auto",
+      "provider": "openai"
     },
     {
-      "name": "Gemini-3-Pro",
+      "name": "GPT-5.3 Codex",
+      "id": "gpt-5.3-codex",
+      "type": "openai",
+      "reasoning": "auto",
+      "provider": "openai"
+    },
+    {
+      "name": "Gemini 3 Pro",
       "id": "gemini-3-pro-preview",
       "type": "common",
       "reasoning": "auto",
-      "provider": "google"
+      "provider": "google",
+      "capabilities": {
+        "vision": true
+      }
     },
     {
-      "name": "Gemini-3-Flash",
-      "id": "gemini-3-flash-preview",
-      "type": "common",
+      "name": "Claude Sonnet 4.5",
+      "id": "claude-sonnet-4-5-20250929",
+      "type": "anthropic",
       "reasoning": "auto",
-      "provider": "google"
+      "provider": "anthropic"
+    },
+    {
+      "name": "Claude Opus 4.5",
+      "id": "claude-opus-4-5-20251101",
+      "type": "anthropic",
+      "reasoning": "auto",
+      "provider": "anthropic"
+    },
+    {
+      "name": "Claude Opus 4.6",
+      "id": "claude-opus-4-6",
+      "type": "anthropic",
+      "reasoning": "auto",
+      "provider": "anthropic"
+    },
+    {
+      "name": "Claude Opus 4.6 Fast",
+      "id": "claude-opus-4-6-fast",
+      "type": "anthropic",
+      "reasoning": "auto",
+      "provider": "anthropic"
     }
   ],
   "dev_mode": false,

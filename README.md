@@ -266,14 +266,14 @@ Docker部署支持以下环境变量：
 #### 获取模型列表
 
 ```bash
-curl http://localhost:3000/v1/models
+curl http://localhost:3010/v1/models
 ```
 
 #### 对话补全
 
 **流式响应**（实时返回）：
 ```bash
-curl http://localhost:3000/v1/chat/completions \
+curl http://localhost:3010/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{
     "model": "claude-opus-4-1-20250805",
@@ -286,7 +286,7 @@ curl http://localhost:3000/v1/chat/completions \
 
 **非流式响应**（等待完整结果）：
 ```bash
-curl http://localhost:3000/v1/chat/completions \
+curl http://localhost:3010/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{
     "model": "claude-opus-4-1-20250805",
@@ -306,6 +306,62 @@ curl http://localhost:3000/v1/chat/completions \
   - 未指定 - 由服务器端决定默认行为
 - `max_tokens` - 最大输出长度
 - `temperature` - 温度参数（0-1）
+
+## 本地 npm 启动
+
+我们推荐使用 `npm start` 将 droid2api 作后台服务直接在仓库内运行，便于在写代码时即时修改：
+
+1. 安装依赖（只需做一次）：
+   ```bash
+   cd /root/tools/droid2api
+   npm install
+   ```
+2. 确保 `config.json` 中 `port` 设置为可用端口（当前默认 `3010` 与我们的 Docker 端口一致）。
+3. 用 `FACTORY_API_KEY` 环境变量启动（参考你提供的 key）：
+   ```bash
+   FACTORY_API_KEY=fk-kJdBLMuX4wJ652EdchQx-nmr9yA3hlSBUdGiqA8xaRGKLfeVZuChmnH5c2uwo1A8 npm start
+   ```
+   `npm start` 会以后台进程启动 HTTP 接口（默认监听 `/v1/*` 端点）。为了让命令在后台持续运行，可在 shell 中使用 `nohup` / `tmux` / `systemd`。
+4. 访问 `http://localhost:3010/` 验证服务已就绪。
+
+## systemd 服务
+
+为了生产环境长期保持运行，请按下列步骤注册 systemd：
+
+1. 在 `/etc/droid2api.env` 里写入认证环境变量：
+   ```ini
+   FACTORY_API_KEY=fk-kJdBLMuX4wJ652EdchQx-nmr9yA3hlSBUdGiqA8xaRGKLfeVZuChmnH5c2uwo1A8
+   PORT=3010
+   ```
+2. 把仓库中的 `droid2api.service` 文件（位于 `/root/tools/droid2api/droid2api.service`）复制到 `/etc/systemd/system/droid2api.service`，其内容如下：
+   ```ini
+   [Unit]
+   Description=Droid2API OpenAI-compatible proxy
+   After=network.target
+
+   [Service]
+   Type=simple
+   WorkingDirectory=/root/tools/droid2api
+   EnvironmentFile=/etc/droid2api.env
+   ExecStart=/usr/bin/env FACTORY_API_KEY=${FACTORY_API_KEY} /usr/bin/npm start
+   Restart=on-failure
+   RestartSec=5
+
+   [Install]
+   WantedBy=multi-user.target
+   ```
+3. 重新加载 systemd 并启动服务：
+   ```bash
+   sudo systemctl daemon-reload
+   sudo systemctl enable --now droid2api
+   ```
+4. 以后需要查看状态/日志：
+   ```bash
+   sudo systemctl status droid2api
+   sudo journalctl -u droid2api -f
+   ```
+
+`droid2api.service` 会自动读取 `/etc/droid2api.env` 的 `FACTORY_API_KEY` 和 `PORT`，避免把密钥写进代码仓库。若需调整监听端口，也同步修改 `config.json` 中的 `port` 字段。
 
 ## 常见问题
 

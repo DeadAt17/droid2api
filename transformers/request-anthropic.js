@@ -50,16 +50,28 @@ export function transformToAnthropic(openaiRequest) {
         continue; // Skip adding system messages to messages array
       }
 
+      // Anthropic API only accepts user/assistant roles.
+      // OpenAI-style tool messages are folded back into user content.
+      let normalizedRole = msg.role;
+      if (normalizedRole === 'tool') {
+        normalizedRole = 'user';
+      }
+      if (normalizedRole !== 'user' && normalizedRole !== 'assistant') {
+        normalizedRole = 'user';
+      }
+
       const anthropicMsg = {
-        role: msg.role,
+        role: normalizedRole,
         content: []
       };
 
       if (typeof msg.content === 'string') {
-        anthropicMsg.content.push({
-          type: 'text',
-          text: msg.content
-        });
+        if (msg.content.trim() !== '') {
+          anthropicMsg.content.push({
+            type: 'text',
+            text: msg.content
+          });
+        }
       } else if (Array.isArray(msg.content)) {
         for (const part of msg.content) {
           if (part.type === 'text') {
@@ -68,14 +80,44 @@ export function transformToAnthropic(openaiRequest) {
               text: part.text
             });
           } else if (part.type === 'image_url') {
-            anthropicMsg.content.push({
-              type: 'image',
-              source: part.image_url
-            });
+            const imageObj = typeof part.image_url === 'string'
+              ? { url: part.image_url }
+              : (part.image_url || {});
+            const imageUrl = imageObj.url || '';
+
+            if (imageUrl.startsWith('data:')) {
+              const m = imageUrl.match(/^data:([^;]+);base64,(.+)$/);
+              if (m) {
+                anthropicMsg.content.push({
+                  type: 'image',
+                  source: {
+                    type: 'base64',
+                    media_type: m[1],
+                    data: m[2]
+                  }
+                });
+              }
+            } else if (imageUrl) {
+              anthropicMsg.content.push({
+                type: 'image',
+                source: {
+                  type: 'url',
+                  url: imageUrl
+                }
+              });
+            }
           } else {
             anthropicMsg.content.push(part);
           }
         }
+      }
+
+      // Anthropic requires non-empty text content blocks.
+      if (anthropicMsg.content.length === 0) {
+        anthropicMsg.content.push({
+          type: 'text',
+          text: '[empty]'
+        });
       }
 
       anthropicRequest.messages.push(anthropicMsg);

@@ -1,0 +1,14 @@
+[Unit]
+Description=Droid2API OpenAI-compatible proxy
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/root/tools/droid2api
+EnvironmentFile=/etc/droid2api.env
+ExecStart=/usr/bin/env FACTORY_API_KEY=${FACTORY_API_KEY} /usr/bin/npm start
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

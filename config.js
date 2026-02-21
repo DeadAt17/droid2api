@@ -91,3 +91,35 @@ export function getRedirectedModelId(modelId) {
   }
   return modelId;
 }
+
+export function getModelCapabilities(modelId) {
+  const model = getModelById(modelId);
+  if (!model) return {};
+  return model.capabilities || {};
+}
+
+export function getModelFallback(modelId) {
+  const model = getModelById(modelId);
+  if (!model) return null;
+  return model.fallback_model || null;
+}
+
+export function getModelRetryPolicy(modelId) {
+  const cfg = getConfig();
+  const model = getModelById(modelId);
+  const defaults = cfg.default_retry_policy || {};
+  const modelPolicy = model?.retry_policy || {};
+
+  const retryCount = Number.isInteger(modelPolicy.retry_count)
+    ? modelPolicy.retry_count
+    : (Number.isInteger(defaults.retry_count) ? defaults.retry_count : 2);
+
+  const delaysMs = Array.isArray(modelPolicy.delays_ms) && modelPolicy.delays_ms.length > 0
+    ? modelPolicy.delays_ms
+    : (Array.isArray(defaults.delays_ms) && defaults.delays_ms.length > 0 ? defaults.delays_ms : [600, 1200]);
+
+  return {
+    retry_count: Math.max(0, retryCount),
+    delays_ms: delaysMs.map(v => Number(v)).filter(v => Number.isFinite(v) && v >= 0)
+  };
+}

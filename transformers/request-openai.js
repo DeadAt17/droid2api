@@ -25,33 +25,65 @@ export function transformToOpenAI(openaiRequest) {
   // Transform messages to input
   if (openaiRequest.messages && Array.isArray(openaiRequest.messages)) {
     for (const msg of openaiRequest.messages) {
+      // Responses API only accepts assistant/system/developer/user roles.
+      // Convert OpenAI chat tool role into user text payload to preserve context.
+      let normalizedRole = msg.role;
+      let normalizedContent = msg.content;
+
+      if (normalizedRole === 'tool') {
+        normalizedRole = 'user';
+        if (typeof normalizedContent !== 'string') {
+          try {
+            normalizedContent = JSON.stringify(normalizedContent ?? {});
+          } catch {
+            normalizedContent = String(normalizedContent ?? '');
+          }
+        }
+        normalizedContent = normalizedContent ? `[tool_result]\n${normalizedContent}` : '[tool_result]';
+      }
+
+      if (!['assistant', 'system', 'developer', 'user'].includes(normalizedRole)) {
+        normalizedRole = 'user';
+      }
+
       const inputMsg = {
-        role: msg.role,
+        role: normalizedRole,
         content: []
       };
 
       // Determine content type based on role
-      // user role uses 'input_text', assistant role uses 'output_text'
-      const textType = msg.role === 'assistant' ? 'output_text' : 'input_text';
-      const imageType = msg.role === 'assistant' ? 'output_image' : 'input_image';
+      // user/system/developer use input_*, assistant uses output_*
+      const textType = normalizedRole === 'assistant' ? 'output_text' : 'input_text';
+      const imageType = normalizedRole === 'assistant' ? 'output_image' : 'input_image';
 
-      if (typeof msg.content === 'string') {
-        inputMsg.content.push({
-          type: textType,
-          text: msg.content
-        });
-      } else if (Array.isArray(msg.content)) {
-        for (const part of msg.content) {
+      if (typeof normalizedContent === 'string') {
+        if (normalizedContent.trim() !== '') {
+          inputMsg.content.push({
+            type: textType,
+            text: normalizedContent
+          });
+        }
+      } else if (Array.isArray(normalizedContent)) {
+        for (const part of normalizedContent) {
           if (part.type === 'text') {
+            const txt = part.text || '';
+            if (txt.trim() === '') continue;
             inputMsg.content.push({
               type: textType,
-              text: part.text
+              text: txt
             });
           } else if (part.type === 'image_url') {
-            inputMsg.content.push({
-              type: imageType,
-              image_url: part.image_url
-            });
+            const imageObj = typeof part.image_url === 'string'
+              ? { url: part.image_url }
+              : (part.image_url || {});
+            const imageUrl = imageObj.url || '';
+            if (imageUrl) {
+              inputMsg.content.push({
+                type: imageType,
+                // Responses API expects image_url as string (not object)
+                image_url: imageUrl
+              });
+            }
           } else {
             // Pass through other types as-is
             inputMsg.content.push(part);
@@ -59,16 +91,42 @@ export function transformToOpenAI(openaiRequest) {
         }
       }
 
+      // Drop empty assistant messages that usually only carried tool calls.
+      if (normalizedRole === 'assistant' && inputMsg.content.length === 0) {
+        continue;
+      }
+
+      if (inputMsg.content.length === 0) {
+        inputMsg.content.push({
+          type: textType,
+          text: '[empty]'
+        });
+      }
+
       targetRequest.input.push(inputMsg);
     }
   }
 
   // Transform tools if present
+  // OpenAI Chat format: {type:'function', function:{name,description,parameters,strict}}
+  // Responses API format: {type:'function', name, description, parameters, strict}
   if (openaiRequest.tools && Array.isArray(openaiRequest.tools)) {
-    targetRequest.tools = openaiRequest.tools.map(tool => ({
-      ...tool,
-      strict: false
-    }));
+    targetRequest.tools = openaiRequest.tools.map(tool => {
+      if (tool?.type === 'function' && tool.function) {
+        return {
+          type: 'function',
+          name: tool.function.name,
+          description: tool.function.description,
+          parameters: tool.function.parameters || {},
+          strict: tool.function.strict ?? false
+        };
+      }
+
+      return {
+        ...tool,
+        strict: tool?.strict ?? false
+      };
+    });
   }
 
   // Extract system message as instructions and prepend system prompt
